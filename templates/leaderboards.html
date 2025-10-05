@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Rankings — EXOVISION</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="/static/media/charts_bg.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+  
+  <nav class="navbar">
+    <a class="site-brand" href="/">EXOVISION</a>
+    <div class="nav-links">
+      <a href="/explorer">Explorer</a>
+      <a href="/leaderboards">Rankings</a>
+      <a href="/compare">Compare</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="main-panel" style="background: rgba(15, 23, 42, 0.2);">
+      <h1 class="section-title" style="text-align: center; margin-bottom: 50px;">Exoplanet Rankings</h1>
+      
+      <div class="grids">
+        <div class="grid-col">
+          <h5>Most <span style="color: #34d399;">Habitable</span></h5>
+          <ul id="most-habitable" class="list-group"></ul>
+        </div>
+        
+        <div class="grid-col">
+          <h5><span style="color: #ef4444;">Hottest</span> Planets</h5>
+          <ul id="most-hot" class="list-group"></ul>
+        </div>
+        
+        <div class="grid-col">
+          <h5>Most Massive</h5>
+          <ul id="most-mass" class="list-group"></ul>
+        </div>
+        
+        <div class="grid-col">
+          <h5>Largest Radius</h5>
+          <ul id="largest-radius" class="list-group"></ul>
+        </div>
+        
+        <div class="grid-col">
+          <h5><span style="color: #1e40af;">Coldest</span> Planets</h5>
+          <ul id="coldest" class="list-group"></ul>
+        </div>
+        
+        <div class="grid-col">
+          <h5>Most <span style="color: #000000; text-shadow: 0 0 1px rgba(255,255,255,0.5);">Dense</span></h5>
+          <ul id="most-dense" class="list-group"></ul>
+        </div>
+        
+        <div class="grid-col">
+          <h5>Highest Gravity</h5>
+          <ul id="highest-gravity" class="list-group"></ul>
+        </div>
+        
+        <div class="grid-col">
+          <h5>Lowest Gravity</h5>
+          <ul id="lowest-gravity" class="list-group"></ul>
+        </div>
+        
+        <div class="grid-col">
+          <h5>Longest Orbital Period</h5>
+          <ul id="longest-orbital-period" class="list-group"></ul>
+        </div>
+        
+        <div class="grid-col">
+          <h5>Shortest Orbital Period</h5>
+          <ul id="shortest-orbital-period" class="list-group"></ul>
+        </div>
+      </div>
+
+      <p style="text-align: center; margin-top: 50px; color: var(--text-muted); font-size: 14px;">
+        Click any planet to view detailed information and habitability analysis.
+      </p>
+    </div>
+  </main>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

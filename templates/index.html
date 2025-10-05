@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>EXOVISION — Exoplanet Explorer</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="/static/media/home_bg.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+  
+  <nav class="navbar">
+    <a class="site-brand" href="/">EXOVISION</a>
+    <div class="nav-links">
+      <a href="/explorer">Explorer</a>
+      <a href="/leaderboards">Rankings</a>
+      <a href="/compare">Compare</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <h1 class="hero-title">EXOVISION</h1>
+      <p class="hero-sub">Explore 4,000+ Exoplanets Beyond Our Solar System</p>
+      
+      <div class="search-bar-wrapper">
+        <div class="input-group">
+          <input id="search-input" class="search-input" type="search" placeholder="Search planets... (e.g. Kepler-452 b)" autocomplete="off">
+          <button id="dropdown-toggle" class="btn-outline-light">▾</button>
+        </div>
+        <div id="search-dropdown"></div>
+      </div>
+
+      <div class="hero-actions">
+        <button id="surprise-btn" class="btn-ghost">Surprise Me</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="main-panel" style="background: rgba(15, 23, 42, 0.4);">
+      <h2 class="section-title" style="text-align: center; margin-bottom: 40px;">Discover Exoplanets</h2>
+      <div class="card-grid">
+        <a class="card" href="/explorer">
+          <div style="font-size: 20px; margin-bottom: 12px; color: var(--accent-cyan);">EXPLORER</div>
+          <div style="font-size: 14px; color: var(--text-muted); font-weight: 400;">Search & Browse Planets</div>
+        </a>
+        <a class="card" href="/leaderboards">
+          <div style="font-size: 20px; margin-bottom: 12px; color: var(--accent-purple);">RANKINGS</div>
+          <div style="font-size: 14px; color: var(--text-muted); font-weight: 400;">Top Planets by Category</div>
+        </a>
+        <a class="card" href="/compare">
+          <div style="font-size: 20px; margin-bottom: 12px; color: var(--accent-green);">COMPARE</div>
+          <div style="font-size: 14px; color: var(--text-muted); font-weight: 400;">Side-by-Side Analysis</div>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div>© 2025 EXOVISION — Army Public School Hyd Cantt</div>
+    <div>NASA Space Apps Challenge — Hyderabad, Pakistan</div>
+  </footer>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

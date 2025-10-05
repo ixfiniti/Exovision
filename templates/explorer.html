@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Explorer — EXOVISION</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="/static/media/explorer_bg.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+  
+  <nav class="navbar">
+    <a class="site-brand" href="/">EXOVISION</a>
+    <div class="nav-links">
+      <a href="/explorer">Explorer</a>
+      <a href="/leaderboards">Rankings</a>
+      <a href="/compare">Compare</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+  </nav>
+
+  <main class="container" style="margin-top: 80px;">
+    <div class="main-panel" style="background: rgba(15, 23, 42, 0.4);">
+      <h1 class="section-title" style="text-align: center; margin-bottom: 50px;">Exoplanet Explorer</h1>
+      
+      <div class="search-bar-wrapper" style="max-width: 800px; margin: 0 auto;">
+        <div class="input-group">
+          <input id="search-input" class="search-input" type="search" placeholder="Search 4,000+ exoplanets... (e.g. Kepler-452 b)" autocomplete="off">
+          <button id="dropdown-toggle" class="btn-outline-light">▾</button>
+        </div>
+        <div id="search-dropdown"></div>
+      </div>
+
+      <div style="text-align: center; margin-top: 40px; color: var(--text-muted);">
+        <p>Search by planet name to view detailed stats, habitability scores, and more.</p>
+        <p style="margin-top: 12px;">Try browsing our <a href="/leaderboards" style="color: var(--accent-cyan);">Rankings</a> or <a href="/compare" style="color: var(--accent-cyan);">Compare</a> planets!</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

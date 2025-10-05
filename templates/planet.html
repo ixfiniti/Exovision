@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ planet.name }} — EXOVISION</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="/static/media/planet_bg.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+  
+  <nav class="navbar">
+    <a class="site-brand" href="/">EXOVISION</a>
+    <div class="nav-links">
+      <a href="/explorer">Explorer</a>
+      <a href="/leaderboards">Rankings</a>
+      <a href="/compare">Compare</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="main-panel" style="max-width: 1100px; background: rgba(15, 23, 42, 0.4);">
+      <div class="planet-card" style="transform: scale(0.95);">
+        <div class="planet-left">
+          <h2>{{ planet.name }}</h2>
+          
+          <ul class="info-list">
+            <li>
+              <span>Radius</span>
+              <span>{{ '%.2f'|format(planet.radius) if planet.radius is not none else '—' }} R⊕</span>
+            </li>
+            <li>
+              <span>Mass</span>
+              <span>{{ '%.2f'|format(planet.mass) if planet.mass is not none else '—' }} M⊕</span>
+            </li>
+            <li>
+              <span>Surface Gravity</span>
+              <span>{{ '%.2f'|format(planet.surface_gravity) if planet.surface_gravity is not none else '—' }} g⊕</span>
+            </li>
+            <li>
+              <span>Avg Temperature</span>
+              <span>{{ '%.2f'|format(planet.avg_temp_C_norm) if planet.avg_temp_C_norm is not none else '—' }} °C</span>
+            </li>
+            <li>
+              <span>Orbital Period</span>
+              <span>{{ '%.2f'|format(planet.orbital_period_days) if planet.orbital_period_days is not none else '—' }} days</span>
+            </li>
+          </ul>
+
+          <p class="small-muted">All values are relative to Earth (⊕). Earth = 1.00 baseline.</p>
+
+          <div class="flags">
+            {% if planet.is_rocky %}<span class="flag good">Rocky Surface</span>{% endif %}
+            {% if planet.is_gas_giant %}<span class="flag bad">Gas Giant</span>{% endif %}
+            {% for k,v in planet.get('narrative_flags',{}).items() %}
+              {% if v %}<span class="flag bad">{{ k.replace('_',' ').title() }}</span>{% endif %}
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="planet-right">
+          <h3 style="font-family: 'Orbitron', sans-serif; margin-bottom: 20px; font-size: 20px; text-transform: uppercase; letter-spacing: 2px;">Habitability Analysis</h3>
+          
+          <div class="chart-wrap">
+            <canvas id="habitChart" width="280" height="280"></canvas>
+            <div id="habitLabel" class="habit-label"></div>
+          </div>
+
+          <div class="chart-info">
+            <div style="margin-bottom: 8px;">
+              <strong>Actual Habitability:</strong> <span id="actualPercentLabel"></span>
+            </div>
+            <div>
+              <strong>Composite Score:</strong> <span id="compositeLabel"></span>
+            </div>
+          </div>
+
+          <div id="advice" class="advice"></div>
+          
+          <a href="/compare?planetA={{ planet.name|urlencode }}" class="btn-compare" style="display: inline-block; margin-top: 24px; padding: 14px 28px; background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(138, 43, 226, 0.15)); border: 2px solid rgba(0, 217, 255, 0.4); border-radius: 12px; color: var(--accent-cyan); font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(0, 217, 255, 0.2);" onmouseover="this.style.background='linear-gradient(135deg, rgba(0, 217, 255, 0.25), rgba(138, 43, 226, 0.25))'; this.style.borderColor='rgba(0, 217, 255, 0.6)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 25px rgba(0, 217, 255, 0.3)';" onmouseout="this.style.background='linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(138, 43, 226, 0.15))'; this.style.borderColor='rgba(0, 217, 255, 0.4)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(0, 217, 255, 0.2)';">Compare with Others</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // this part of code was enhanced using AI
+    const planetData = {{ planet | tojson }};
+
+    const rawNum = planetData.habitability_percent_norm;
+    const comp = planetData.composite_habitability_norm;
+    
+    const actualNum = rawNum !== null && rawNum !== undefined ? Number(rawNum) : 0;
+    
+    let chartDisplay = actualNum;
+    if (actualNum < 0.0001) {
+      chartDisplay = 0;
+    } else if (actualNum > 0 && actualNum < 1) {
+      chartDisplay = 1;
+    }
+    
+    document.getElementById('actualPercentLabel').innerText = actualNum.toFixed(2) + '%';
+    
+    document.getElementById('compositeLabel').innerText = comp !== null ? comp.toFixed(4) : '—';
+    
+    document.getElementById('habitLabel').innerText = chartDisplay.toFixed(2) + '%';
+
+    const ctx = document.getElementById('habitChart').getContext('2d');
+    const chartColor = chartDisplay > 50 ? '#34d399' : chartDisplay > 20 ? '#fbbf24' : '#ef4444';
+    
+    const chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Habitability', 'Uninhabitable'],
+        datasets: [{
+          data: [chartDisplay, (100 - chartDisplay)],
+          backgroundColor: [chartColor, 'rgba(15, 23, 42, 0.8)'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function() {
+                return 'Habitability: ' + actualNum.toFixed(2) + '%';
+              }
+            }
+          }
+        },
+        cutout: '70%',
+        hover: { mode: null }
+      }
+    });
+
+    (function() {
+      const flags = planetData.narrative_flags || {};
+      const warnings = [];
+      
+      if (flags.high_temp || (planetData.avg_temp_C_norm && planetData.avg_temp_C_norm > 100)) {
+        warnings.push("you would be incinerated within seconds due to extreme heat");
+      }
+      if (flags.low_temp || (planetData.avg_temp_C_norm && planetData.avg_temp_C_norm < -100)) {
+        warnings.push("you would freeze solid almost instantly");
+      }
+      if (flags.extreme_gravity || (planetData.surface_gravity && planetData.surface_gravity > 3)) {
+        warnings.push("the crushing gravity would compress your body and make movement impossible");
+      }
+      if (flags.low_gravity || (planetData.surface_gravity && planetData.surface_gravity < 0.3)) {
+        warnings.push("the low gravity would cause rapid bone and muscle deterioration");
+      }
+      if (planetData.is_gas_giant) {
+        warnings.push("there's no solid surface — you would fall through endless layers of gas until crushed by pressure");
+      }
+      if (flags.no_liquid_water) {
+        warnings.push("the complete absence of liquid water makes any form of Earth-like life impossible");
+      }
+      if (flags.high_radiation) {
+        warnings.push("intense radiation would destroy your DNA within hours");
+      }
+      if (flags.toxic_atmosphere) {
+        warnings.push("the toxic atmosphere would be lethal with a single breath");
+      }
+
+      const adviceEl = document.getElementById('advice');
+      if (warnings.length === 0) {
+        if (planetData.name === "Earth") {
+          adviceEl.innerHTML = "<strong>🌍 Welcome home!</strong> — You're already here. Earth is the perfect baseline for habitability. Enjoy liquid water, breathable air, and the ideal conditions for life as we know it!";
+        } else {
+          adviceEl.innerHTML = "<strong>No major survival threats detected</strong> — However, habitability doesn't guarantee Earth-like conditions. Further analysis recommended.";
+        }
+        adviceEl.style.background = 'rgba(52, 211, 153, 0.1)';
+        adviceEl.style.borderColor = 'rgba(52, 211, 153, 0.3)';
+        adviceEl.style.color = '#6ee7b7';
+        adviceEl.style.textAlign = 'left';
+      } else {
+        let message = "<strong>⚠️ If you attempted to visit this planet:</strong> ";
+        if (warnings.length === 1) {
+          message += warnings[0] + ".";
+        } else if (warnings.length === 2) {
+          message += warnings.join(", and ") + ".";
+        } else {
+          message += warnings.slice(0, -1).join(", ") + ", and " + warnings[warnings.length - 1] + ".";
+        }
+        adviceEl.innerHTML = message;
+        adviceEl.style.textAlign = 'left';
+      }
+    })();
+  </script>
+</body>
+</html>
+<!-- this was debugged and enhanced using chatgpt -->

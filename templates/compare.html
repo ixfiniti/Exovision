@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Compare Planets — EXOVISION</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="/static/media/compare_bg.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+  
+  <nav class="navbar">
+    <a class="site-brand" href="/">EXOVISION</a>
+    <div class="nav-links">
+      <a href="/explorer">Explorer</a>
+      <a href="/leaderboards">Rankings</a>
+      <a href="/compare">Compare</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="main-panel" style="background: rgba(15, 23, 42, 0.4);">
+      <h1 class="section-title" style="text-align: center; margin-bottom: 50px;">Compare Planets</h1>
+      
+      <div class="compare-row">
+        <div class="compare-col">
+          <h3 style="font-family: 'Orbitron', sans-serif; margin-bottom: 16px; font-size: 18px; color: var(--accent-cyan);">Planet A</h3>
+          <input id="cmp-a" placeholder="Search first planet..." autocomplete="off" style="width: 100%; padding: 16px 20px; background: rgba(15, 23, 42, 0.8); border: 2px solid rgba(0, 217, 255, 0.2); border-radius: 12px; color: var(--text-primary); font-size: 16px; outline: none;">
+          <div id="cmp-a-results" class="cmp-results"></div>
+        </div>
+        
+        <div class="compare-col">
+          <h3 style="font-family: 'Orbitron', sans-serif; margin-bottom: 16px; font-size: 18px; color: var(--accent-purple);">Planet B</h3>
+          <input id="cmp-b" placeholder="Search second planet..." autocomplete="off" style="width: 100%; padding: 16px 20px; background: rgba(15, 23, 42, 0.8); border: 2px solid rgba(0, 217, 255, 0.2); border-radius: 12px; color: var(--text-primary); font-size: 16px; outline: none;">
+          <div id="cmp-b-results" class="cmp-results"></div>
+        </div>
+      </div>
+
+      <div id="comparison-table" style="margin-top: 40px;"></div>
+    </div>
+  </main>
+
+  <script>
+    // this part of code was enhanced using AI
+    let planets = [];
+    let planetA = null;
+    let planetB = null;
+    let selectedIndexA = -1;
+    let selectedIndexB = -1;
+    let suggestionNodesA = [];
+    let suggestionNodesB = [];
+
+    async function loadPlanets() {
+      try {
+        const response = await fetch('/api/all', { cache: 'no-store' });
+        planets = await response.json();
+      } catch (e) {
+        console.error('Failed to load planets:', e);
+      }
+    }
+
+    function normalizeString(str) {
+      return str.toLowerCase().replace(/[\s\-]/g, '');
+    }
+
+    function searchPlanets(query) {
+      const qNorm = normalizeString(query);
+      return planets.filter(p => p.name && normalizeString(p.name).includes(qNorm)).slice(0, 10);
+    }
+
+    function getArrow(valueA, valueB, higherIsBetter = true, planetAName = '', planetBName = '') {
+      if (valueA === null || valueA === undefined || valueB === null || valueB === undefined) return '';
+      
+      const diff = Number(valueA) - Number(valueB);
+      if (Math.abs(diff) < 0.01) return '<span style="color: #9ca3af; font-size: 16px;">−</span>';
+      
+      const isEarthPlanetA = planetAName && planetAName.toLowerCase() === 'earth';
+      const isEarthPlanetB = planetBName && planetBName.toLowerCase() === 'earth';
+      
+      if (isEarthPlanetA) {
+        return diff > 0 ? '<span style="color: #34d399; font-size: 18px;">▲</span>' : '<span style="color: #34d399; font-size: 18px;">▼</span>';
+      }
+      
+      if (isEarthPlanetB) {
+        return diff > 0 ? '<span style="color: #ef4444; font-size: 18px;">▲</span>' : '<span style="color: #ef4444; font-size: 18px;">▼</span>';
+      }
+      
+      if (higherIsBetter) {
+        return diff > 0 ? '<span style="color: #34d399; font-size: 18px;">▲</span>' : '<span style="color: #ef4444; font-size: 18px;">▼</span>';
+      } else {
+        return diff > 0 ? '<span style="color: #ef4444; font-size: 18px;">▲</span>' : '<span style="color: #34d399; font-size: 18px;">▼</span>';
+      }
+    }
+
+    function formatValue(value, unit = '', decimals = 2) {
+      if (value === null || value === undefined) return '—';
+      if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+      if (typeof value === 'number') return value.toFixed(decimals) + (unit ? ' ' + unit : '');
+      return value;
+    }
+
+    function renderComparison() {
+      const table = document.getElementById('comparison-table');
+      if (!planetA || !planetB) {
+        table.innerHTML = '';
+        return;
+      }
+
+      const fields = [
+        { key: 'name', label: 'Planet Name', compare: false },
+        { key: 'radius', label: 'Radius', unit: 'R⊕', higher: false },
+        { key: 'mass', label: 'Mass', unit: 'M⊕', higher: false },
+        { key: 'density_rel', label: 'Density', unit: 'ρ⊕', higher: true },
+        { key: 'surface_gravity', label: 'Surface Gravity', unit: 'g⊕', higher: false },
+        { key: 'semimajor_AU', label: 'Orbital Distance', unit: 'AU', higher: false },
+        { key: 'eq_temp_K', label: 'Equilibrium Temp', unit: 'K', higher: false },
+        { key: 'avg_temp_C_norm', label: 'Avg Temperature', unit: '°C', higher: false },
+        { key: 'insolation', label: 'Insolation', unit: 'S⊕', higher: false },
+        { key: 'habitability_percent_norm', label: 'Habitability %', unit: '%', higher: true },
+        { key: 'composite_habitability_norm', label: 'Composite Score', unit: '', higher: true },
+        { key: 'orbital_period_days', label: 'Orbital Period', unit: 'days', higher: false },
+        { key: 'star_temp', label: 'Star Temperature', unit: 'K', higher: false },
+        { key: 'is_rocky', label: 'Rocky Surface', compare: false },
+        { key: 'is_gas_giant', label: 'Gas Giant', compare: false },
+        { key: 'liquid_water_potential', label: 'Liquid Water Potential', compare: false },
+        { key: 'in_habitable_zone_conservative', label: 'In Habitable Zone (Conservative)', compare: false },
+        { key: 'in_habitable_zone_optimistic', label: 'In Habitable Zone (Optimistic)', compare: false },
+      ];
+
+      let html = '<div style="background: rgba(15, 23, 42, 0.5); border-radius: 16px; padding: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">';
+      html += '<table style="width: 100%; border-collapse: separate; border-spacing: 0;">';
+      html += '<thead><tr style="background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(138, 43, 226, 0.15)); border-radius: 12px;"><th style="padding: 18px; text-align: left; font-family: Orbitron; font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: rgba(0, 217, 255, 0.9); border-top-left-radius: 12px; border-bottom: 2px solid rgba(0, 217, 255, 0.2);">Property</th><th style="padding: 18px; text-align: center; font-family: Orbitron; font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-cyan); border-bottom: 2px solid rgba(0, 217, 255, 0.2);">Planet A</th><th style="padding: 18px; text-align: center; width: 80px; border-bottom: 2px solid rgba(0, 217, 255, 0.2);"></th><th style="padding: 18px; text-align: center; font-family: Orbitron; font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-purple); border-top-right-radius: 12px; border-bottom: 2px solid rgba(0, 217, 255, 0.2);">Planet B</th></tr></thead>';
+      html += '<tbody>';
+
+      fields.forEach((field, idx) => {
+        const valA = planetA[field.key];
+        const valB = planetB[field.key];
+        const isLastRow = idx === fields.length - 1;
+        
+        let arrow = '';
+        if (field.compare !== false && typeof valA === 'number' && typeof valB === 'number') {
+          arrow = getArrow(valA, valB, field.higher !== false, planetA.name, planetB.name);
+        }
+
+        html += `<tr style="transition: background 0.2s ease;" onmouseover="this.style.background='rgba(0, 217, 255, 0.05)'" onmouseout="this.style.background='transparent'">`;
+        html += `<td style="padding: 14px 18px; border-bottom: ${isLastRow ? 'none' : '1px solid rgba(255,255,255,0.03)'}; font-weight: 600; font-size: 14px; color: rgba(255, 255, 255, 0.9);">${field.label}</td>`;
+        html += `<td style="padding: 14px 18px; border-bottom: ${isLastRow ? 'none' : '1px solid rgba(255,255,255,0.03)'}; text-align: center; font-size: 15px; color: var(--text-primary); font-weight: 500;">${formatValue(valA, field.unit)}</td>`;
+        html += `<td style="padding: 14px 18px; border-bottom: ${isLastRow ? 'none' : '1px solid rgba(255,255,255,0.03)'}; text-align: center;">${arrow}</td>`;
+        html += `<td style="padding: 14px 18px; border-bottom: ${isLastRow ? 'none' : '1px solid rgba(255,255,255,0.03)'}; text-align: center; font-size: 15px; color: var(--text-primary); font-weight: 500;">${formatValue(valB, field.unit)}</td>`;
+        html += '</tr>';
+      });
+
+      html += '</tbody></table></div>';
+      
+      table.innerHTML = html;
+    }
+
+    function setupSearch(inputId, resultsId, planetVar) {
+      const input = document.getElementById(inputId);
+      const results = document.getElementById(resultsId);
+      const isA = planetVar === 'A';
+      let suggestionNodes = isA ? suggestionNodesA : suggestionNodesB;
+      let selectedIndex = isA ? selectedIndexA : selectedIndexB;
+
+      function clearSelection() {
+        suggestionNodes.forEach(n => n.style.background = 'rgba(15, 23, 42, 0.8)');
+        selectedIndex = -1;
+        if (isA) selectedIndexA = -1;
+        else selectedIndexB = -1;
+      }
+
+      function highlightSuggestion(index) {
+        clearSelection();
+        if (index >= 0 && index < suggestionNodes.length) {
+          suggestionNodes[index].style.background = 'rgba(0, 217, 255, 0.2)';
+          selectedIndex = index;
+          if (isA) selectedIndexA = index;
+          else selectedIndexB = index;
+          suggestionNodes[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      }
+
+      function selectPlanet(planet) {
+        input.value = planet.name;
+        results.innerHTML = '';
+        if (isA) {
+          planetA = planet;
+          suggestionNodesA = [];
+          selectedIndexA = -1;
+        } else {
+          planetB = planet;
+          suggestionNodesB = [];
+          selectedIndexB = -1;
+        }
+        renderComparison();
+      }
+
+      input.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        if (!query) {
+          results.innerHTML = '';
+          if (isA) suggestionNodesA = [];
+          else suggestionNodesB = [];
+          return;
+        }
+
+        const matches = searchPlanets(query);
+        results.innerHTML = '';
+        suggestionNodes = [];
+
+        matches.forEach((planet, idx) => {
+          const div = document.createElement('div');
+          div.className = 'dropdown-item';
+          div.style.cursor = 'pointer';
+          div.style.marginBottom = '8px';
+          div.style.padding = '12px';
+          div.style.background = 'rgba(15, 23, 42, 0.8)';
+          div.style.borderRadius = '8px';
+          div.textContent = planet.name;
+          
+          div.addEventListener('click', () => selectPlanet(planet));
+          div.addEventListener('mouseenter', () => highlightSuggestion(idx));
+          div.addEventListener('mouseleave', clearSelection);
+
+          results.appendChild(div);
+          suggestionNodes.push(div);
+        });
+
+        if (isA) suggestionNodesA = suggestionNodes;
+        else suggestionNodesB = suggestionNodes;
+      });
+
+      input.addEventListener('keydown', (e) => {
+        suggestionNodes = isA ? suggestionNodesA : suggestionNodesB;
+        selectedIndex = isA ? selectedIndexA : selectedIndexB;
+
+        if (suggestionNodes.length === 0) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = input.value.trim();
+            if (query) {
+              const matches = searchPlanets(query);
+              if (matches.length > 0) {
+                selectPlanet(matches[0]);
+              }
+            }
+          }
+          return;
+        }
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const nextIndex = selectedIndex + 1;
+          if (nextIndex < suggestionNodes.length) {
+            highlightSuggestion(nextIndex);
+          }
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prevIndex = selectedIndex - 1;
+          if (prevIndex >= 0) {
+            highlightSuggestion(prevIndex);
+          } else {
+            clearSelection();
+          }
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (selectedIndex >= 0 && selectedIndex < suggestionNodes.length) {
+            const planetName = suggestionNodes[selectedIndex].textContent;
+            const planet = planets.find(p => p.name === planetName);
+            if (planet) selectPlanet(planet);
+          } else if (suggestionNodes.length > 0) {
+            const planetName = suggestionNodes[0].textContent;
+            const planet = planets.find(p => p.name === planetName);
+            if (planet) selectPlanet(planet);
+          }
+        } else if (e.key === 'Escape') {
+          results.innerHTML = '';
+          if (isA) suggestionNodesA = [];
+          else suggestionNodesB = [];
+          clearSelection();
+        }
+      });
+    }
+
+    loadPlanets().then(() => {
+      setupSearch('cmp-a', 'cmp-a-results', 'A');
+      setupSearch('cmp-b', 'cmp-b-results', 'B');
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const planetAName = urlParams.get('planetA');
+      const planetBName = urlParams.get('planetB');
+      
+      if (planetAName) {
+        const planet = planets.find(p => p.name && normalizeString(p.name) === normalizeString(planetAName));
+        if (planet) {
+          planetA = planet;
+          document.getElementById('cmp-a').value = planet.name;
+          if (planetBName) {
+            const planetBMatch = planets.find(p => p.name && normalizeString(p.name) === normalizeString(planetBName));
+            if (planetBMatch) {
+              planetB = planetBMatch;
+              document.getElementById('cmp-b').value = planetBMatch.name;
+            }
+          }
+          renderComparison();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+<!-- this html file compare was debugged and enhanced using ai -->
