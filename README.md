@@ -45,7 +45,7 @@ Hosting	Replit / GitHub Pages (depending on setup)
 
 👨‍🚀 The Team
 
-Team AstroQuest – Iqra University (Hyderabad)
+Team HAMSSAZ – Iqra University (Hyderabad)
 
 💻 Ali Raza – Frontend Developer
 
